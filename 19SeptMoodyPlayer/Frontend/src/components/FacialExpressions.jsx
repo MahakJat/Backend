@@ -75,12 +75,7 @@ function FacialExpressions() {
         height="560"
         style={{ borderRadius: "8px" }}
       />
-      <canvas
-        ref={canvasRef}
-        width="720"
-        height="560"
-        style={{ position: "absolute", top: 0, left: 0 }}
-      />
+     
     </div>
   );
 }
