@@ -1,12 +1,10 @@
 import React, { useEffect, useRef } from "react";
 import * as faceapi from "face-api.js";
-
-function FacialExpressions() {
+import "./FacialExpressions.css"
+import axios from "axios"
+function FacialExpressions({setSongs}) {
   const videoRef = useRef(null);
-  const canvasRef = useRef(null);
-
-  useEffect(() => {
-    const loadModels = async () => {
+  const loadModels = async () => {
       const MODEL_URL = "/models"; // make sure models are in public/models
       await Promise.all([
         faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL),
@@ -27,56 +25,58 @@ function FacialExpressions() {
         .catch((err) => console.error("Error accessing webcam:", err));
     };
 
-    const handleVideoPlay = () => {
-      setInterval(async () => {
-        if (videoRef.current && canvasRef.current) {
-          const detections = await faceapi
-            .detectAllFaces(
-              videoRef.current,
-              new faceapi.TinyFaceDetectorOptions()
-            )
-            .withFaceLandmarks()
-            .withFaceExpressions();
+    async function detectMood() {
+      if (videoRef.current) {
+        const detections = await faceapi
+          .detectAllFaces(
+            videoRef.current,
+            new faceapi.TinyFaceDetectorOptions()
+          )
+          .withFaceLandmarks()
+          .withFaceExpressions();
 
-          const canvas = canvasRef.current;
-          const displaySize = {
-            width: videoRef.current.videoWidth,
-            height: videoRef.current.videoHeight,
-          };
+        let mostProbableExpression = 0;
+        let _expression = "";
 
-          faceapi.matchDimensions(canvas, displaySize);
+        for (const expression of Object.keys(detections[0].expressions)) {
+          if (detections[0].expressions[expression] > mostProbableExpression) {
+            mostProbableExpression = detections[0].expressions[expression];
+            _expression = expression;
+            console.log(_expression);
 
-          const resized = faceapi.resizeResults(detections, displaySize);
+            // get http://localhost:3000/songs?mood=happy
 
-          const ctx = canvas.getContext("2d");
-          ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-          faceapi.draw.drawDetections(canvas, resized);
-          faceapi.draw.drawFaceLandmarks(canvas, resized);
-          faceapi.draw.drawFaceExpressions(canvas, resized);
+           axios.get(`http://localhost:3000/songs?mood=${_expression}`).then((response)=>
+             {
+              console.log(response.data)
+              setSongs(response.data.songs)
+             }
+          ).catch(err => console.log(err))
+          }
         }
-      }, 1500);
-    };
-
-    loadModels();
-
-    if (videoRef.current) {
-      videoRef.current.addEventListener("play", handleVideoPlay);
+      }
     }
+
+  useEffect(() => {
+    loadModels();
   }, []);
 
   return (
-    <div style={{ position: "relative" }}>
+   <div>
+      <div style={{ position: "relative", width:"720px",
+        height:"560px" }} >
       <video
         ref={videoRef}
         autoPlay
         muted
-        width="720"
-        height="560"
-        style={{ borderRadius: "8px" }}
+        style={{ borderRadius: "8px", position:"absolute", width:"720px",
+        height:"560px" }}
+        className="user-video-feed"
       />
-     
     </div>
+      <button onClick={detectMood}>detect mood</button>
+
+   </div>
   );
 }
 

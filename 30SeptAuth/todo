@@ -1,0 +1,6 @@
+which which api we are going to create
+
+POST  /register  => user created /register karna
+POST /login => check username & password  then loggedIn the user
+GET /user => get user Data [protected]
+GET /logout => loggedOut
